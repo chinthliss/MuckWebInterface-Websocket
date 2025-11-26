@@ -1,7 +1,7 @@
 import {sendChannelMessage} from './core';
 import ChannelInterface from "./channel-interface";
 
-import {ChannelMessageCallback, ChannelMonitorCallback} from "./defs";
+import type {ChannelMessageCallback, ChannelMonitorCallback} from "./defs";
 
 export default class Channel {
 
@@ -48,15 +48,16 @@ export default class Channel {
      * Has this channel handle a received message
      */
     receiveMessage(message: string, data: any): void {
-        for (let i = 0, maxi = this.monitorCallbacks.length; i < maxi; i++) {
+        for (const callback of this.monitorCallbacks) {
             setTimeout(() => {
-                this.monitorCallbacks[i](message, data, false);
+                callback(message, data, false);
             });
         }
-        if (Array.isArray(this.messageCallbacks[message])) {
-            for (let i = 0, maxi = this.messageCallbacks[message].length; i < maxi; i++) {
+        const callbacks = this.messageCallbacks[message];
+        if (callbacks) {
+            for (const callback of callbacks) {
                 setTimeout(() => {
-                    this.messageCallbacks[message][i](data);
+                    callback(data);
                 });
             }
         }
@@ -71,9 +72,9 @@ export default class Channel {
             this.joiningMessageBuffer.push([message, data]);
             return;
         }
-        for (let i = 0, maxi = this.monitorCallbacks.length; i < maxi; i++) {
+        for (const callback of this.monitorCallbacks) {
             setTimeout(() => {
-                this.monitorCallbacks[i](message, data, true);
+                callback(message, data, true);
             });
         }
         sendChannelMessage(this.name, message, data);
@@ -85,7 +86,7 @@ export default class Channel {
      */
     registerMessageHandler(message: string, handler: ChannelMessageCallback): void {
         if (!(message in this.messageCallbacks)) this.messageCallbacks[message] = [];
-        this.messageCallbacks[message].push(handler);
+        this.messageCallbacks[message]?.push(handler);
     }
 
     /**
@@ -100,8 +101,7 @@ export default class Channel {
      */
     channelConnected(): void {
         this.joined = true;
-        for (let i = 0, maxi = this.joiningMessageBuffer.length; i < maxi; i++) {
-            const bufferedMessage = this.joiningMessageBuffer[i];
+        for (const bufferedMessage of this.joiningMessageBuffer) {
             this.sendMessage(bufferedMessage[0], bufferedMessage[1]);
         }
     }

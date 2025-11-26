@@ -11,6 +11,7 @@ export default defineConfig({
             fileName: 'muckwebinterface-websocket',
         },
         copyPublicDir: false,
+        emptyOutDir: true,
         rollupOptions: {
             // Dependencies that shouldn't be bundled
             external: ['axios'],

@@ -30,8 +30,7 @@ export default {
 }
 
 // But also export definitions
-import {
-    ConnectionState,
+import type {
     ConnectionErrorCallback,
     SystemNotificationCallback,
     ChannelMessageCallback,
@@ -41,9 +40,6 @@ import {
     ConnectionOptions
 } from "./defs";
 
-export {
-    ConnectionState
-};
 export type {
     ConnectionErrorCallback,
     SystemNotificationCallback,
@@ -52,4 +48,10 @@ export type {
     ConnectionStateChangedCallback,
     PlayerChangedCallback,
     ConnectionOptions
+};
+
+// And the enum
+import { ConnectionState } from "./defs";
+export {
+    ConnectionState
 };

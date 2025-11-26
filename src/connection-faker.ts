@@ -24,8 +24,8 @@ export default class ConnectionFaker extends Connection {
 
         if (stringToSend.startsWith('SYS')) {
             let [message, data] = stringToSend.split(',', 2);
-            message = message.slice(3);
-            data = JSON.parse(data);
+            message = message ? message.slice(3) : '';
+            data = data ? JSON.parse(data) : {};
             //Respond to join requests as if joined
             if (message === 'joinChannels') {
                 setTimeout(() => receivedStringFromConnection('SYSjoinedChannel,' + this.encodeDataForConnection(data)));
@@ -35,8 +35,8 @@ export default class ConnectionFaker extends Connection {
 
         if (stringToSend.startsWith('MSG')) {
             let [channel, message, data] = stringToSend.split(',', 3);
-            channel = channel.slice(3);
-            data = JSON.parse(data);
+            channel = channel ? channel.slice(3) : '';
+            data = data ? JSON.parse(data) : {};
             //Reflect anything that has 'reflect' as the message
             if (message === 'reflect') {
                 setTimeout(() => receivedStringFromConnection('MSG' + channel + ',reflected,' + this.encodeDataForConnection(data)));

@@ -5,10 +5,12 @@ import Channel from "./channel";
 import ChannelInterface from "./channel-interface";
 import {
     InitialMode,
+    ConnectionState
+} from "./defs";
+import type {
     ConnectionErrorCallback,
-    ConnectionState,
-    ConnectionStateChangedCallback,
     ConnectionOptions,
+    ConnectionStateChangedCallback,
     PlayerChangedCallback,
     SystemNotificationCallback
 } from "./defs";
@@ -245,13 +247,14 @@ const receivedSystemMessage = (message: string, data: any): void => {
     switch (message) {
         case 'joinedChannel':
             // Let the channel know it's joined, so it can process buffered items
-            if (data in channels) channels[data].channelConnected();
+            const channel = channels[data];
+            if (channel) channel.channelConnected();
             else logError("Muck acknowledged joining a channel we weren't aware of! Channel: " + data);
             break;
         case 'notice':
-            for (let i = 0, maxi = systemNotificationCallbacks.length; i < maxi; i++) {
+            for (const callback of connectionErrorCallbacks) {
                 try {
-                    systemNotificationCallbacks[i](data);
+                    callback(data);
                 } catch (e) {
                 }
             }
@@ -268,8 +271,8 @@ const receivedSystemMessage = (message: string, data: any): void => {
 }
 
 const receivedChannelMessage = (channelName: string, message: string, data: any): void => {
-    if (channelName in channels)
-        channels[channelName].receiveMessage(message, data);
+    const channel = channels[channelName];
+    if (channel) channel.receiveMessage(message, data);
     else
         logError("Received message on channel we're not aware of! Channel = " + channelName);
 }
@@ -298,11 +301,9 @@ const queueConnection = () => {
     queuedConnectionTimeout = setTimeout(connect, delay);
     updateAndDispatchStatus(ConnectionState.queued);
     updateAndDispatchPlayer(null, null);
-    for (let channel in channels) {
-        if (channels.hasOwnProperty(channel)) {
-            //Channels will be re-joined if required, but we need to let them know to buffer until the muck acknowledges them.
-            channels[channel].channelDisconnected();
-        }
+    for (const channelName in channels) {
+        const channel = channels[channelName];
+        if (channel) channel.channelDisconnected();
     }
     logDebug(`Connection attempt queued with a delay of ${delay}ms.`);
 }
@@ -351,11 +352,10 @@ export const stop = () => {
     clearConnectionTimeout();
     updateAndDispatchStatus(ConnectionState.disconnected);
     updateAndDispatchPlayer(null, null);
-    for (let channel in channels) {
-        if (channels.hasOwnProperty(channel)) {
-            //Channels will be re-joined if required, but we need to let them know to buffer until the muck acknowledges them.
-            channels[channel].channelDisconnected();
-        }
+    for (const channelName in channels) {
+        const channel = channels[channelName];
+        //Channels will be re-joined if required, but we need to let them know to buffer until the muck acknowledges them.
+        if (channel) channel.channelDisconnected()
     }
     connection.disconnect();
     connection = null;
@@ -365,7 +365,10 @@ export const stop = () => {
  * Returns a channel interface to talk to a channel, joining it if required.
  */
 export const channel = (channelName: string): ChannelInterface => {
-    if (channelName in channels) return channels[channelName].interface;
+    if (channelName in channels) {
+        const channel = channels[channelName];
+        if (channel) return channel.interface;
+    }
     logDebug('New Channel - ' + channelName);
     let newChannel: Channel = new Channel(channelName);
     channels[channelName] = newChannel;
@@ -415,9 +418,9 @@ export const updateAndDispatchPlayer = (newDbref: number | null, newName: string
     playerDbref = newDbref;
     playerName = newName;
     logDebug("Player changed: " + newName + '(' + newDbref + ')');
-    for (let i = 0, maxi = playerChangedCallbacks.length; i < maxi; i++) {
+    for (const callback of playerChangedCallbacks) {
         try {
-            playerChangedCallbacks[i](newDbref, newName);
+            callback(newDbref, newName);
         } catch (e) {
         }
     }
@@ -434,18 +437,17 @@ export const updateAndDispatchStatus = (newStatus: ConnectionState): void => {
     // Maybe need to send channel join requests?
     if (newStatus === ConnectionState.connected) {
         let channelsToJoin = [];
-        for (let channel in channels) {
-            if (channels.hasOwnProperty(channel) && !channels[channel].isChannelJoined()) {
-                channelsToJoin.push(channel);
-            }
+        for (const channelName in channels) {
+            const channel = channels[channelName];
+            if (channel && !channel.isChannelJoined()) channelsToJoin.push(channel);
         }
         if (channelsToJoin.length > 0) sendSystemMessage('joinChannels', channelsToJoin);
     }
 
     //Callbacks
-    for (let i = 0, maxi = connectionStateChangedCallbacks.length; i < maxi; i++) {
+    for (const callback of connectionStateChangedCallbacks) {
         try {
-            connectionStateChangedCallbacks[i](newStatus);
+            callback(newStatus);
         } catch (e) {
         }
     }
@@ -456,10 +458,11 @@ export const updateAndDispatchStatus = (newStatus: ConnectionState): void => {
  */
 const dispatchError = (error: string): void => {
     logError("(dispatched) " + error);
-    for (let i = 0, maxi = connectionErrorCallbacks.length; i < maxi; i++) {
+    for (const callback of connectionErrorCallbacks) {
         try {
-            connectionErrorCallbacks[i](error);
+            callback(error);
         } catch (e) {
+            // Not doing anything if a provided callback failed
         }
     }
 }
@@ -504,7 +507,7 @@ export const getConnectionState = (): ConnectionState => {
 const context = globalThis;
 
 // Figure out whether we have local storage (And load debug option if so)
-localStorageAvailable = 'localStorage' in context;
+localStorageAvailable = localStorage?.getItem !== undefined;
 if (localStorageAvailable && localStorage.getItem('mwiWebsocket-debug') === 'y') debug = true;
 
 // Set default URLs

@@ -1,5 +1,5 @@
 import Channel from "./channel";
-import {ChannelMessageCallback, ChannelMonitorCallback} from './defs';
+import type {ChannelMessageCallback, ChannelMonitorCallback} from './defs';
 
 /**
  * The parts of a channel that will be exposed to a program using this library

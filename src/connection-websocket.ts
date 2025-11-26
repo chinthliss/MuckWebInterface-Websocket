@@ -9,7 +9,8 @@ import {
 } from "./core";
 import {ConnectionState} from "./defs";
 import Connection from "./connection";
-import axios, {AxiosError, AxiosInstance, AxiosResponse} from "axios";
+import axios from "axios";
+import type {AxiosError, AxiosInstance, AxiosResponse} from "axios";
 
 export interface ConnectionWebsocketOptions {
     websocketUrl?: string;
@@ -168,8 +169,8 @@ export default class ConnectionWebSocket extends Connection {
                     updateAndDispatchStatus(ConnectionState.connected);
                     updateAndDispatchPlayer(playerDbref, playerName);
                     //Resend anything that was buffered
-                    for (let i = 0; i++; i < this.connectingOutgoingMessageBuffer.length) {
-                        this.sendString(this.connectingOutgoingMessageBuffer[i]);
+                    for (const message of this.connectingOutgoingMessageBuffer) {
+                        this.sendString(message);
                     }
                     this.connectingOutgoingMessageBuffer = [];
                     return;
