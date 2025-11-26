@@ -35,7 +35,7 @@ Properties on program:
     @player/<some sort of reference>:<program> - Programs to receive wsConnect/wsDisconnect events based on player connection/disconnects
     disabled:If Y the system will prevent any connections
 )
-$def _version "1.2.1"
+$def _version "1.2.2"
  
 $include $lib/kta/strings
 $include $lib/kta/misc
@@ -228,7 +228,9 @@ svar debugLevel (Loaded from disk on initialization but otherwise in memory to s
     cacheByChannel @ channel @ array_getitem ?dup if
         foreach nip
             connections @ swap array_getitem ?dup if
-                "player" array_getitem dup player? if swap array_appenditem else pop then
+                "player" array_getitem
+                dup dbref? not if pop continue then
+                dup player? if swap array_appenditem else pop then
             then
         repeat
         1 array_nunion
@@ -392,14 +394,14 @@ svar debugLevel (Loaded from disk on initialization but otherwise in memory to s
         channel @ message @ data @ sendChannelMessageToDescrs
     then
 ; PUBLIC sendToAccount
-
+ 
 ( Sends a non-channel specific notification to a connection, for things like error messages )
 : sendNotificationToDescr[ int:who str:message -- ]
     who @ dup int? AND not if "'Who' must be a non-zero descr." abort then
     message @ "" stringcmp not if "Message can't be blank" abort then
     { who @ }list "notice" message @ sendSystemMessageToDescrs    
 ; PUBLIC sendNotificationToDescr
-
+ 
 (Separate so that it can be called by internal processes)
 : handleChannelCallbacks[ int:triggeringDescr dbref:triggeringPlayer str:channel str:message any:data -- ]
     _startLogDebug
