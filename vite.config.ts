@@ -12,6 +12,7 @@ export default defineConfig({
         },
         copyPublicDir: false,
         emptyOutDir: true,
+        sourcemap: true,
         rollupOptions: {
             // Dependencies that shouldn't be bundled
             external: ['axios'],
@@ -25,7 +26,7 @@ export default defineConfig({
             }
         }
     },
-    plugins: [dts()],
+    plugins: [dts({ rollupTypes: true })],
     test: {
         include: [resolve(__dirname, 'test/*.ts')]
     },
