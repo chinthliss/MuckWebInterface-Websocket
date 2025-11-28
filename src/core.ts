@@ -436,10 +436,10 @@ export const updateAndDispatchStatus = (newStatus: ConnectionState): void => {
 
     // Maybe need to send channel join requests?
     if (newStatus === ConnectionState.connected) {
-        let channelsToJoin = [];
+        let channelsToJoin: string[] = [];
         for (const channelName in channels) {
             const channel = channels[channelName];
-            if (channel && !channel.isChannelJoined()) channelsToJoin.push(channel);
+            if (channel && !channel.isChannelJoined()) channelsToJoin.push(channelName);
         }
         if (channelsToJoin.length > 0) sendSystemMessage('joinChannels', channelsToJoin);
     }

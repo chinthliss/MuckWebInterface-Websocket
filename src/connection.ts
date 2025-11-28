@@ -1,7 +1,7 @@
 export default abstract class Connection {
 
     encodeDataForConnection(data: any): string {
-        if (typeof data == 'undefined') return '';
+        if (typeof data === 'undefined') return '';
 
         let json: string = JSON.stringify(data);
         // Attempt to try to replace certain unicode special characters with ANSI ones.
